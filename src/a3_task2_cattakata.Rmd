@@ -2,10 +2,26 @@
 title: "Assignment 3, Task 2"
 author: "Catherine Takata"
 date: "2/24/2021"
-output: html_document
+output: 
+  html_document:
+    theme: cerulean
+    code_folding: show
+    toc: true
+    number_sections: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
+library(raster) 
+library(tidyverse)
+library(here)
+library(sf)
+library(fasterize)
 ```
+
+```{r}
+ca_species <- list.files(path = here("ca_cetaceans"), pattern = "*.tif", full.names = TRUE)
+
+ca_species <- raster::stack(ca_species)
+```
+
