@@ -425,8 +425,25 @@ pre code {
 
 </div>
 
+<div id="TOC">
+<ul>
+<li><a href="#convert-to-a-datafram"><span class="toc-section-number">0.1</span> Convert to a datafram</a></li>
+</ul>
+</div>
 
+<pre class="r"><code>ca_species &lt;- list.files(path = here(&quot;ca_cetaceans&quot;), pattern = &quot;*.tif&quot;, full.names = TRUE)
+species_stack &lt;- raster::stack(ca_species)</code></pre>
+<pre class="r"><code>cetaceans_thresh &lt;- function(x, thresh = .6) {
+  y &lt;- ifelse(x &gt;= thresh, 1, NA)
+  return(y)
+}
 
+species_richness &lt;- calc(species_stack, fun = cetaceans_thresh)
+
+species_richness_sum &lt;- calc(species_richness, fun = sum, na.rm = TRUE)</code></pre>
+<div id="convert-to-a-datafram" class="section level2">
+<h2><span class="header-section-number">0.1</span> Convert to a datafram</h2>
+</div>
 
 
 

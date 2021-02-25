@@ -7,7 +7,6 @@ output:
     theme: cerulean
     code_folding: show
     toc: true
-    number_sections: true
 ---
 
 ```{r setup, include=FALSE}
@@ -21,7 +20,35 @@ library(fasterize)
 
 ```{r}
 ca_species <- list.files(path = here("ca_cetaceans"), pattern = "*.tif", full.names = TRUE)
+species_stack <- raster::stack(ca_species)
+```
 
-ca_species <- raster::stack(ca_species)
+```{r}
+cetaceans_thresh <- function(x, thresh = .6) {
+  y <- ifelse(x >= thresh, 1, NA)
+  return(y)
+}
+
+species_richness <- calc(species_stack, fun = cetaceans_thresh)
+
+species_richness_sum <- calc(species_richness, fun = sum, na.rm = TRUE)
+```
+
+## Convert to a dataframe
+`ggplot` likes dataframes - not rasters - so we have to convert our raster to a dataframe.  The `raster::rasterToPoints()` function converts a raster to a matrix of points - `x`, `y`, and `layer` (or the layer name if it's a named layer).  Then `as.data.frame()` can convert that matrix to a `data.frame` object suitable for `ggplot.`
+
+```{r}
+species_richness_df <- raster::rasterToPoints(species_richness) %>%
+  as.data.frame()
+species_sum_df <- raster::rasterToPoints(species_richness_sum) %>%
+  as.data.frame()
+
+ggplot() +
+  geom_raster(data = species_richness_df, aes(x = x, y = y, fill = layer)) +
+  geom_raster(data = species_sum_df, fill = 'green') +
+  coord_sf(expand = 0) +
+  scale_fill_gradient(low = 'black', high = 'white') +
+  theme_void() +
+  theme(panel.background = element_rect(fill = 'slateblue4'))
 ```
 
