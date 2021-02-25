@@ -1,5 +1,5 @@
 ---
-title: "Assignment 3, Task 2"
+title: "Assignment 3, Task 2: CA cetacean species richness"
 author: "Catherine Takata"
 date: "2/24/2021"
 output: 
@@ -8,6 +8,11 @@ output:
     code_folding: show
     toc: true
 ---
+
+## Summary 
+In this task, we will create a raster of species richness of 35 cetacean species off the coast of California. We will present our results through a static map using ggplot with a coastline shapefile for refrence. 
+
+Source: AquaMaps; Kaschner, K., Rius-Barile, J., Kesner-Reyes, K., Garilao, C., Kullander, S., Rees, T., & Froese, R. (2016)
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -19,44 +24,56 @@ library(fasterize)
 library(rnaturalearth)
 ```
 
-```{r}
+```{r, warning=F}
+# Load in subsetted raster data 
+# Use rasterstack() to read in multiple layers at once as a multi-layer 
 ca_species <- list.files(path = here("ca_cetaceans"), pattern = "*.tif", full.names = TRUE)
 species_stack <- raster::stack(ca_species)
 ```
 
-```{r}
+## Set a probability threshold to determine presence of species 
+
+```{r, warning = F}
+# Set a probability threshold using a if else statement to reclassify the presence of species 
+# If the species is greater than or equal to a 0.6 threshold, return 1 ~ "present" else return 0 ~ "absent" 
 cetaceans_thresh <- function(x, thresh = .6) {
   y <- ifelse(x >= thresh, 1, NA)
   return(y)
 }
 
+# Use the calc() function to determine the species richness of the compounded raster stack 
+# Determines how many species are "present" in each cell 
 species_richness <- calc(species_stack, fun = cetaceans_thresh)
-
 species_richness_sum <- calc(species_richness, fun = sum, na.rm = TRUE)
 ```
 
 ## Convert to a dataframe
-`ggplot` likes dataframes - not rasters - so we have to convert our raster to a dataframe.  The `raster::rasterToPoints()` function converts a raster to a matrix of points - `x`, `y`, and `layer` (or the layer name if it's a named layer).  Then `as.data.frame()` can convert that matrix to a `data.frame` object suitable for `ggplot.`
+Convert the raster data to a dataframe to plot with ggplot().  The `raster::rasterToPoints()` function converts a raster to a matrix of points - `x`, `y`, and `layer` (or the layer name if it's a named layer).  Then `as.data.frame()` can convert that matrix to a `data.frame` object suitable for `ggplot.`
 
-```{r}
+```{r, warning=F}
 species_richness_df <- raster::rasterToPoints(species_richness) %>%
   as.data.frame()
 species_sum_df <- raster::rasterToPoints(species_richness_sum) %>%
   as.data.frame()
 ```
 
+```{r, warning=F, message=F}
+# Using rnaturalearth, obtain a pre-downloaded vector map for coastline data 
+# Coastline data will add visual context to our raster data 
+coastline <- ne_download(scale = 50, type = 'coastline', category = 'physical', returnclass = "sf")
 
-```{r}
-coastline <- ne_download(scale = 110, type = 'coastline', category = 'physical', returnclass = "sf")
-
+# Use ggplot() to plot and populate with raster data + spatial data to produce a "map" 
 ggplot() + 
   geom_raster(data = species_sum_df, aes(x = x, y = y, fill = layer)) +
   geom_sf(data = coastline) +
   coord_sf(xlim = c(-125, -115), ylim = c(32, 38)) + 
-  scale_fill_gradient(low = 'white', high = 'blue') +
-  theme_void() 
-  #theme(panel.background = element_rect(fill = 'slateblue'))
+  scale_fill_gradient(low = 'white', high = 'red') +
+  theme_void() +
+  labs(title = "Species richness of cetacean species of CA",
+       caption = "Figure 1")
 ```
+
+**Figure 1**: Red shading indicates species richness of 35 cetacean species off the California coast. Probability of occurence was determined by choosing a probability threshold of 0.6 to indicate "presence" of each species. Increased saturation indicates higher density of species and more occurences. 
 
 
 
